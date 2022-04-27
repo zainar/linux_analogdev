@@ -542,10 +542,9 @@ static int ad4130_set_mode(struct ad4130_state *st, enum ad4130_mode mode)
 
 static int ad4130_set_watermark_interrupt_en(struct ad4130_state *st, bool en)
 {
-	unsigned int mask = AD4130_FIFO_CONTROL_WM_INT_EN_MASK;
-
 	return regmap_update_bits(st->regmap, AD4130_FIFO_CONTROL_REG,
-				  mask, en ? mask : 0);
+				  AD4130_FIFO_CONTROL_WM_INT_EN_MASK,
+				  FIELD_PREP(AD4130_FIFO_CONTROL_WM_INT_EN_MASK, en));
 }
 
 static unsigned int ad4130_watermark_reg_val(unsigned int val)
@@ -782,7 +781,6 @@ static int ad4130_set_channel_enable(struct ad4130_state *st,
 {
 	struct ad4130_chan_info *chan_info = &st->chans_info[channel];
 	struct ad4130_slot_info *slot_info;
-	unsigned int mask = AD4130_CHANNEL_EN_MASK;
 	int ret;
 
 	if (chan_info->enabled == status)
@@ -796,8 +794,9 @@ static int ad4130_set_channel_enable(struct ad4130_state *st,
 
 	slot_info = &st->slots_info[chan_info->slot];
 
-	ret = regmap_update_bits(st->regmap, AD4130_REG_CHANNEL_X(channel),
-				 mask, status ? mask : 0);
+	ret = regmap_update_bits(st->regmap, AD4130_CHANNEL_X_REG(channel),
+				 AD4130_CHANNEL_EN_MASK,
+				 FIELD_PREP(AD4130_CHANNEL_EN_MASK, status));
 	if (ret)
 		return ret;
 
