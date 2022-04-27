@@ -99,6 +99,7 @@ patternProperties:
   "^channel@([0-9]|1[0-5])$":
     type: object
     $ref: adc.yaml
+    unevaluatedProperties: false
 
     properties:
       reg:
