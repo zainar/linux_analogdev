@@ -30,109 +30,106 @@
 #include <linux/iio/kfifo_buf.h>
 #include <linux/iio/sysfs.h>
 
-#define AD4130_8_NAME			"ad4130-8"
+#define AD4130_8_NAME				"ad4130-8"
 
-#define AD4130_COMMS_READ_MASK		BIT(6)
+#define AD4130_COMMS_READ_MASK			BIT(6)
 
-#define AD4130_REG_STATUS		0x00
-#define AD4130_STATUS_POR_FLAG_MASK	BIT(4)
+#define AD4130_STATUS_REG			0x00
+#define AD4130_STATUS_POR_FLAG_MASK		BIT(4)
 
-#define AD4130_REG_ADC_CONTROL		0x01
-#define AD4130_BIPOLAR_MASK		BIT(14)
-#define AD4130_INT_REF_VAL_MASK		BIT(13)
-#define AD4130_INT_REF_2_5V		2500000
-#define AD4130_INT_REF_1_25V		1250000
-#define AD4130_CSB_EN_MASK		BIT(9)
-#define AD4130_INT_REF_EN_MASK		BIT(8)
-#define AD4130_MODE_MASK		GENMASK(5, 2)
-#define AD4130_MCLK_SEL_MASK		GENMASK(1, 0)
+#define AD4130_ADC_CONTROL_REG			0x01
+#define AD4130_ADC_CONTROL_BIPOLAR_MASK		BIT(14)
+#define AD4130_ADC_CONTROL_INT_REF_VAL_MASK	BIT(13)
+#define AD4130_INT_REF_2_5V			2500000
+#define AD4130_INT_REF_1_25V			1250000
+#define AD4130_ADC_CONTROL_CSB_EN_MASK		BIT(9)
+#define AD4130_ADC_CONTROL_INT_REF_EN_MASK	BIT(8)
+#define AD4130_ADC_CONTROL_MODE_MASK		GENMASK(5, 2)
+#define AD4130_ADC_CONTROL_MCLK_SEL_MASK	GENMASK(1, 0)
+#define AD4130_MCLK_FREQ_76_8KHZ		76800
+#define AD4130_MCLK_FREQ_153_6KHZ		153600
 
-#define AD4130_REG_DATA			0x02
+#define AD4130_DATA_REG				0x02
 
-#define AD4130_REG_IO_CONTROL		0x03
-#define AD4130_INT_PIN_SEL_MASK		GENMASK(9, 8)
-#define AD4130_GPIO_DATA_MASK		GENMASK(7, 4)
-#define AD4130_GPIO_CTRL_MASK		GENMASK(3, 0)
+#define AD4130_IO_CONTROL_REG			0x03
+#define AD4130_IO_CONTROL_INT_PIN_SEL_MASK	GENMASK(9, 8)
+#define AD4130_IO_CONTROL_GPIO_DATA_MASK	GENMASK(7, 4)
 
-#define AD4130_REG_VBIAS		0x04
+#define AD4130_VBIAS_REG			0x04
 
-#define AD4130_REG_ID			0x05
+#define AD4130_ID_REG				0x05
 
-#define AD4130_REG_ERROR		0x06
+#define AD4130_ERROR_REG			0x06
 
-#define AD4130_REG_ERROR_EN		0x07
+#define AD4130_ERROR_EN_REG			0x07
 
-#define AD4130_REG_CHANNEL_X(x)		(0x09 + (x))
-#define AD4130_CHANNEL_EN_MASK		BIT(23)
-#define AD4130_SETUP_MASK		GENMASK(22, 20)
-#define AD4130_AINP_MASK		GENMASK(17, 13)
-#define AD4130_AINM_MASK		GENMASK(12, 8)
-#define AD4130_IOUT1_MASK		GENMASK(7, 4)
-#define AD4130_IOUT2_MASK		GENMASK(3, 0)
+#define AD4130_CHANNEL_X_REG(x)			(0x09 + (x))
+#define AD4130_CHANNEL_EN_MASK			BIT(23)
+#define AD4130_CHANNEL_SETUP_MASK		GENMASK(22, 20)
+#define AD4130_CHANNEL_AINP_MASK		GENMASK(17, 13)
+#define AD4130_CHANNEL_AINM_MASK		GENMASK(12, 8)
+#define AD4130_CHANNEL_IOUT1_MASK		GENMASK(7, 4)
+#define AD4130_CHANNEL_IOUT2_MASK		GENMASK(3, 0)
 
-#define AD4130_REG_CONFIG_X(x)		(0x19 + (x))
-#define AD4130_IOUT1_VAL_MASK		GENMASK(15, 13)
-#define AD4130_IOUT2_VAL_MASK		GENMASK(12, 10)
-#define AD4130_BURNOUT_MASK		GENMASK(9, 8)
-#define AD4130_REF_BUFP_MASK		BIT(7)
-#define AD4130_REF_BUFM_MASK		BIT(6)
-#define AD4130_REF_SEL_MASK		GENMASK(5, 4)
-#define AD4130_PGA_MASK			GENMASK(3, 1)
-#define AD4130_PGA_NUM			8
+#define AD4130_CONFIG_X_REG(x)			(0x19 + (x))
+#define AD4130_CONFIG_IOUT1_VAL_MASK		GENMASK(15, 13)
+#define AD4130_CONFIG_IOUT2_VAL_MASK		GENMASK(12, 10)
+#define AD4130_CONFIG_BURNOUT_MASK		GENMASK(9, 8)
+#define AD4130_CONFIG_REF_BUFP_MASK		BIT(7)
+#define AD4130_CONFIG_REF_BUFM_MASK		BIT(6)
+#define AD4130_CONFIG_REF_SEL_MASK		GENMASK(5, 4)
+#define AD4130_CONFIG_PGA_MASK			GENMASK(3, 1)
 
-#define AD4130_REG_FILTER_X(x)		(0x21 + (x))
-#define AD4130_FILTER_MODE_MASK		GENMASK(15, 12)
-#define AD4130_FILTER_SELECT_MASK	GENMASK(10, 0)
-#define AD4130_FS_MIN			1
-#define AD4130_MAX_ODR			2400
+#define AD4130_FILTER_X_REG(x)			(0x21 + (x))
+#define AD4130_FILTER_MODE_MASK			GENMASK(15, 12)
+#define AD4130_FILTER_SELECT_MASK		GENMASK(10, 0)
+#define AD4130_FILTER_SELECT_MIN		1
 
-#define AD4130_REG_FIFO_CONTROL		0x3a
-#define AD4130_ADD_FIFO_HEADER_MASK	BIT(18)
-#define AD4130_FIFO_MODE_MASK		GENMASK(17, 16)
-#define AD4130_WATERMARK_INT_EN_MASK	BIT(9)
-#define AD4130_WATERMARK_MASK		GENMASK(7, 0)
-#define AD4130_WATERMARK_256		0
+#define AD4130_FIFO_CONTROL_REG			0x3a
+#define AD4130_FIFO_CONTROL_HEADER_MASK		BIT(18)
+#define AD4130_FIFO_CONTROL_MODE_MASK		GENMASK(17, 16)
+#define AD4130_FIFO_CONTROL_WM_INT_EN_MASK	BIT(9)
+#define AD4130_FIFO_CONTROL_WM_MASK		GENMASK(7, 0)
+#define AD4130_WATERMARK_256			0
 
-#define AD4130_REG_FIFO_STATUS		0x3b
+#define AD4130_FIFO_STATUS_REG			0x3b
 
-#define AD4130_REG_FIFO_DATA		0x3d
-#define AD4130_FIFO_SIZE		256
-#define AD4130_FIFO_MAX_SAMPLE_SIZE	3
+#define AD4130_FIFO_DATA_REG			0x3d
+#define AD4130_FIFO_SIZE			256
+#define AD4130_FIFO_MAX_SAMPLE_SIZE		3
 
-#define AD4130_MAX_GPIOS		4
-#define AD4130_MAX_SETUPS		8
-#define AD4130_MAX_CHANNELS		16
-#define AD4130_MAX_ANALOG_PINS		16
-#define AD4130_MAX_DIFF_INPUTS		30
+#define AD4130_MAX_ANALOG_PINS			16
+#define AD4130_MAX_CHANNELS			16
+#define AD4130_MAX_DIFF_INPUTS			30
+#define AD4130_MAX_GPIOS			4
+#define AD4130_MAX_ODR				2400
+#define AD4130_MAX_PGA				8
+#define AD4130_MAX_SETUPS			8
 
-#define AD4130_AIN2_P1			0x2
-#define AD4130_AIN3_P2			0x3
+#define AD4130_AIN2_P1				0x2
+#define AD4130_AIN3_P2				0x3
 
-#define AD4130_MCLK_FREQ_76_8KHZ	76800
-#define AD4130_MCLK_FREQ_153_6KHZ	153600
+#define AD4130_RESET_BUF_SIZE			8
+#define AD4130_RESET_SLEEP_US			(160 * MICRO / AD4130_MCLK_FREQ_76_8KHZ)
 
-#define AD4130_RESET_BUF_SIZE		8
-
-#define AD4130_SOFT_RESET_SLEEP_US	(160 * MICRO / AD4130_MCLK_FREQ_76_8KHZ)
-
-#define AD4130_INVALID_SLOT		-1
+#define AD4130_INVALID_SLOT			-1
 
 static const unsigned int ad4130_reg_size[] = {
-	[AD4130_REG_STATUS] = 1,
-	[AD4130_REG_ADC_CONTROL] = 2,
-	[AD4130_REG_IO_CONTROL] = 2,
-	[AD4130_REG_VBIAS] = 2,
-	[AD4130_REG_ID] = 1,
-	[AD4130_REG_ERROR] = 2,
-	[AD4130_REG_ERROR_EN] = 2,
-	[AD4130_REG_CHANNEL_X(0) ...
-	 AD4130_REG_CHANNEL_X(AD4130_MAX_CHANNELS)] = 3,
-	[AD4130_REG_CONFIG_X(0) ...
-	 AD4130_REG_CONFIG_X(AD4130_MAX_SETUPS)] = 2,
-	[AD4130_REG_FILTER_X(0) ...
-	 AD4130_REG_FILTER_X(AD4130_MAX_SETUPS)] = 3,
-	[AD4130_REG_FIFO_CONTROL] = 3,
-	[AD4130_REG_FIFO_STATUS] = 1,
+	[AD4130_STATUS_REG] = 1,
+	[AD4130_ADC_CONTROL_REG] = 2,
+	[AD4130_IO_CONTROL_REG] = 2,
+	[AD4130_VBIAS_REG] = 2,
+	[AD4130_ID_REG] = 1,
+	[AD4130_ERROR_REG] = 2,
+	[AD4130_ERROR_EN_REG] = 2,
+	[AD4130_CHANNEL_X_REG(0) ...
+	 AD4130_CHANNEL_X_REG(AD4130_MAX_CHANNELS)] = 3,
+	[AD4130_CONFIG_X_REG(0) ...
+	 AD4130_CONFIG_X_REG(AD4130_MAX_SETUPS)] = 2,
+	[AD4130_FILTER_X_REG(0) ...
+	 AD4130_FILTER_X_REG(AD4130_MAX_SETUPS)] = 3,
+	[AD4130_FIFO_CONTROL_REG] = 3,
+	[AD4130_FIFO_STATUS_REG] = 1,
 };
 
 enum ad4130_id {
@@ -192,7 +189,7 @@ enum ad4130_ref_sel {
 
 enum ad4130_fifo_mode {
 	AD4130_FIFO_MODE_DISABLED = 0b00,
-	AD4130_FIFO_MODE_WATERMARK = 0b01,
+	AD4130_FIFO_MODE_WM = 0b01,
 };
 
 enum ad4130_mode {
@@ -288,7 +285,7 @@ struct ad4130_state {
 	enum ad4130_pin_function	pins_fn[AD4130_MAX_ANALOG_PINS];
 	u32				vbias_pins[AD4130_MAX_ANALOG_PINS];
 	u32				num_vbias_pins;
-	int				scale_tbls[AD4130_REF_SEL_MAX][AD4130_PGA_NUM][2];
+	int				scale_tbls[AD4130_REF_SEL_MAX][AD4130_MAX_PGA][2];
 	struct gpio_chip		gc;
 	unsigned int			gpio_offsets[AD4130_MAX_GPIOS];
 	unsigned int			num_gpios;
@@ -377,7 +374,7 @@ static const unsigned int ad4130_burnout_current_na_tbl[AD4130_BURNOUT_MAX] = {
 {									\
 		.filter_mode = (_filter_mode),				\
 		.odr_div = (_odr_div),					\
-		.fs_max = AD4130_FS_MIN,				\
+		.fs_max = AD4130_FILTER_SELECT_MIN,			\
 		.db3_div = (_db3_div),					\
 		.samp_freq_avail_type = IIO_AVAIL_LIST,			\
 		.samp_freq_avail_len = 1,				\
@@ -429,7 +426,7 @@ static int ad4130_get_reg_size(struct ad4130_state *st, unsigned int reg,
 	if (reg >= ARRAY_SIZE(ad4130_reg_size))
 		return -EINVAL;
 
-	if (reg == AD4130_REG_DATA) {
+	if (reg == AD4130_DATA_REG) {
 		*size = ad4130_data_reg_size(st);
 		return 0;
 	}
@@ -529,24 +526,25 @@ static void ad4130_gpio_set(struct gpio_chip *gc, unsigned int offset,
 {
 	struct ad4130_state *st = gpiochip_get_data(gc);
 	unsigned int real_offset = st->gpio_offsets[offset];
-	unsigned int mask = FIELD_PREP(AD4130_GPIO_DATA_MASK, BIT(real_offset));
+	unsigned int mask = FIELD_PREP(AD4130_IO_CONTROL_GPIO_DATA_MASK,
+				       BIT(real_offset));
 
-	regmap_update_bits(st->regmap, AD4130_REG_IO_CONTROL, mask,
+	regmap_update_bits(st->regmap, AD4130_IO_CONTROL_REG, mask,
 			   value ? mask : 0);
 }
 
 static int ad4130_set_mode(struct ad4130_state *st, enum ad4130_mode mode)
 {
-	return regmap_update_bits(st->regmap, AD4130_REG_ADC_CONTROL,
-				  AD4130_MODE_MASK,
-				  FIELD_PREP(AD4130_MODE_MASK, mode));
+	return regmap_update_bits(st->regmap, AD4130_ADC_CONTROL_REG,
+				  AD4130_ADC_CONTROL_MODE_MASK,
+				  FIELD_PREP(AD4130_ADC_CONTROL_MODE_MASK, mode));
 }
 
 static int ad4130_set_watermark_interrupt_en(struct ad4130_state *st, bool en)
 {
-	unsigned int mask = AD4130_WATERMARK_INT_EN_MASK;
+	unsigned int mask = AD4130_FIFO_CONTROL_WM_INT_EN_MASK;
 
-	return regmap_update_bits(st->regmap, AD4130_REG_FIFO_CONTROL,
+	return regmap_update_bits(st->regmap, AD4130_FIFO_CONTROL_REG,
 				  mask, en ? mask : 0);
 }
 
@@ -561,9 +559,9 @@ static unsigned int ad4130_watermark_reg_val(unsigned int val)
 static int ad4130_set_fifo_mode(struct ad4130_state *st,
 				enum ad4130_fifo_mode mode)
 {
-	return regmap_update_bits(st->regmap, AD4130_REG_FIFO_CONTROL,
-				  AD4130_FIFO_MODE_MASK,
-				  FIELD_PREP(AD4130_FIFO_MODE_MASK, mode));
+	return regmap_update_bits(st->regmap, AD4130_FIFO_CONTROL_REG,
+				  AD4130_FIFO_CONTROL_MODE_MASK,
+				  FIELD_PREP(AD4130_FIFO_CONTROL_MODE_MASK, mode));
 }
 
 static void ad4130_push_fifo_data(struct iio_dev *indio_dev)
@@ -668,9 +666,9 @@ static int ad4130_link_channel_slot(struct ad4130_state *st,
 	struct ad4130_chan_info *chan_info = &st->chans_info[channel];
 	int ret;
 
-	ret = regmap_update_bits(st->regmap, AD4130_REG_CHANNEL_X(channel),
-				 AD4130_SETUP_MASK,
-				 FIELD_PREP(AD4130_SETUP_MASK, slot));
+	ret = regmap_update_bits(st->regmap, AD4130_CHANNEL_X_REG(channel),
+				 AD4130_CHANNEL_SETUP_MASK,
+				 FIELD_PREP(AD4130_CHANNEL_SETUP_MASK, slot));
 	if (ret)
 		return ret;
 
@@ -687,22 +685,22 @@ static int ad4130_write_slot_setup(struct ad4130_state *st,
 	unsigned int val;
 	int ret;
 
-	val = FIELD_PREP(AD4130_IOUT1_VAL_MASK, setup_info->iout0_val) |
-	      FIELD_PREP(AD4130_IOUT1_VAL_MASK, setup_info->iout1_val) |
-	      FIELD_PREP(AD4130_BURNOUT_MASK, setup_info->burnout) |
-	      FIELD_PREP(AD4130_REF_BUFP_MASK, setup_info->ref_bufp) |
-	      FIELD_PREP(AD4130_REF_BUFM_MASK, setup_info->ref_bufm) |
-	      FIELD_PREP(AD4130_REF_SEL_MASK, setup_info->ref_sel) |
-	      FIELD_PREP(AD4130_PGA_MASK, setup_info->pga);
+	val = FIELD_PREP(AD4130_CONFIG_IOUT1_VAL_MASK, setup_info->iout0_val) |
+	      FIELD_PREP(AD4130_CONFIG_IOUT1_VAL_MASK, setup_info->iout1_val) |
+	      FIELD_PREP(AD4130_CONFIG_BURNOUT_MASK, setup_info->burnout) |
+	      FIELD_PREP(AD4130_CONFIG_REF_BUFP_MASK, setup_info->ref_bufp) |
+	      FIELD_PREP(AD4130_CONFIG_REF_BUFM_MASK, setup_info->ref_bufm) |
+	      FIELD_PREP(AD4130_CONFIG_REF_SEL_MASK, setup_info->ref_sel) |
+	      FIELD_PREP(AD4130_CONFIG_PGA_MASK, setup_info->pga);
 
-	ret = regmap_write(st->regmap, AD4130_REG_CONFIG_X(slot), val);
+	ret = regmap_write(st->regmap, AD4130_CONFIG_X_REG(slot), val);
 	if (ret)
 		return ret;
 
 	val = FIELD_PREP(AD4130_FILTER_MODE_MASK, setup_info->filter_mode) |
 	      FIELD_PREP(AD4130_FILTER_SELECT_MASK, setup_info->fs);
 
-	ret = regmap_write(st->regmap, AD4130_REG_FILTER_X(slot), val);
+	ret = regmap_write(st->regmap, AD4130_FILTER_X_REG(slot), val);
 	if (ret)
 		return ret;
 
@@ -826,11 +824,11 @@ static void ad4130_freq_to_fs(enum ad4130_filter_mode filter_mode,
 		divisor *= filter_config->db3_div;
 	}
 
-	temp = AD4130_FS_MIN + filter_config->fs_max -
+	temp = AD4130_FILTER_SELECT_MIN + filter_config->fs_max -
 	       DIV64_U64_ROUND_CLOSEST(dividend, divisor);
 
-	if (temp < AD4130_FS_MIN)
-		temp = AD4130_FS_MIN;
+	if (temp < AD4130_FILTER_SELECT_MIN)
+		temp = AD4130_FILTER_SELECT_MIN;
 	else if (temp > filter_config->fs_max)
 		temp = filter_config->fs_max;
 
@@ -845,7 +843,7 @@ static void ad4130_fs_to_freq(enum ad4130_filter_mode filter_mode,
 	unsigned int dividend, divisor;
 	u64 temp;
 
-	dividend = (filter_config->fs_max - fs + AD4130_FS_MIN) *
+	dividend = (filter_config->fs_max - fs + AD4130_FILTER_SELECT_MIN) *
 		   AD4130_MAX_ODR;
 	divisor = filter_config->fs_max * filter_config->odr_div;
 
@@ -952,12 +950,12 @@ static int ad4130_set_channel_pga(struct ad4130_state *st, unsigned int channel,
 	unsigned int pga, old_pga;
 	int ret = 0;
 
-	for (pga = 0; pga < AD4130_PGA_NUM; pga++)
+	for (pga = 0; pga < AD4130_MAX_PGA; pga++)
 		if (val == st->scale_tbls[setup_info->ref_sel][pga][0] &&
 		    val2 == st->scale_tbls[setup_info->ref_sel][pga][1])
 			break;
 
-	if (pga == AD4130_PGA_NUM)
+	if (pga == AD4130_MAX_PGA)
 		return -EINVAL;
 
 	mutex_lock(&st->lock);
@@ -1031,7 +1029,7 @@ static int _ad4130_read_sample(struct iio_dev *indio_dev, unsigned int channel,
 	if (ret)
 		return ret;
 
-	ret = regmap_read(st->regmap, AD4130_REG_DATA, val);
+	ret = regmap_read(st->regmap, AD4130_DATA_REG, val);
 	if (ret)
 		return ret;
 
@@ -1232,9 +1230,9 @@ static int ad4130_set_fifo_watermark(struct iio_dev *indio_dev, unsigned int val
 
 	mutex_lock(&st->lock);
 
-	ret = regmap_update_bits(st->regmap, AD4130_REG_FIFO_CONTROL,
-				 AD4130_WATERMARK_MASK,
-				 FIELD_PREP(AD4130_WATERMARK_MASK,
+	ret = regmap_update_bits(st->regmap, AD4130_FIFO_CONTROL_REG,
+				 AD4130_FIFO_CONTROL_WM_MASK,
+				 FIELD_PREP(AD4130_FIFO_CONTROL_WM_MASK,
 					    ad4130_watermark_reg_val(eff)));
 	if (ret)
 		goto out;
@@ -1278,7 +1276,7 @@ static int ad4130_buffer_postenable(struct iio_dev *indio_dev)
 	if (ret)
 		goto out;
 
-	ret = ad4130_set_fifo_mode(st, AD4130_FIFO_MODE_WATERMARK);
+	ret = ad4130_set_fifo_mode(st, AD4130_FIFO_MODE_WM);
 	if (ret)
 		goto out;
 
@@ -1358,11 +1356,11 @@ static ssize_t ad4130_get_fifo_enabled(struct device *dev,
 	unsigned int val;
 	int ret;
 
-	ret = regmap_read(st->regmap, AD4130_REG_FIFO_CONTROL, &val);
+	ret = regmap_read(st->regmap, AD4130_FIFO_CONTROL_REG, &val);
 	if (ret)
 		return ret;
 
-	val = FIELD_GET(AD4130_FIFO_MODE_MASK, val);
+	val = FIELD_GET(AD4130_FIFO_CONTROL_MODE_MASK, val);
 
 	return sysfs_emit(buf, "%d\n", val != AD4130_FIFO_MODE_DISABLED);
 }
@@ -1595,7 +1593,7 @@ static int ad4130_parse_fw_channel(struct iio_dev *indio_dev,
 	chan->scan_index = index;
 
 	chan_info->slot = AD4130_INVALID_SLOT;
-	chan_info->setup.fs = AD4130_FS_MIN;
+	chan_info->setup.fs = AD4130_FILTER_SELECT_MIN;
 	chan_info->initialized = true;
 
 	ret = fwnode_property_read_u32_array(child, "diff-channels", pins,
@@ -1778,7 +1776,7 @@ static void ad4130_fill_scale_tbls(struct ad4130_state *st)
 		if (ret < 0)
 			continue;
 
-		for (j = 0; j < AD4130_PGA_NUM; j++) {
+		for (j = 0; j < AD4130_MAX_PGA; j++) {
 			unsigned int pow = st->chip_info->resolution + j -
 					   st->bipolar;
 			unsigned int nv = div_u64((((u64)ret * NANO) >>
@@ -1827,22 +1825,22 @@ static int ad4130_setup(struct iio_dev *indio_dev)
 		int_ref_val = AD4130_INT_REF_VAL_1_25V;
 
 	/* Switch to SPI 4-wire mode. */
-	val = AD4130_CSB_EN_MASK;
-	val |= FIELD_PREP(AD4130_BIPOLAR_MASK, st->bipolar);
-	val |= FIELD_PREP(AD4130_INT_REF_EN_MASK, st->int_ref_en);
-	val |= FIELD_PREP(AD4130_MODE_MASK, AD4130_MODE_IDLE);
-	val |= FIELD_PREP(AD4130_MCLK_SEL_MASK, st->mclk_sel);
-	val |= FIELD_PREP(AD4130_INT_REF_VAL_MASK, int_ref_val);
+	val =  FIELD_PREP(AD4130_ADC_CONTROL_CSB_EN_MASK, 1);
+	val |= FIELD_PREP(AD4130_ADC_CONTROL_BIPOLAR_MASK, st->bipolar);
+	val |= FIELD_PREP(AD4130_ADC_CONTROL_INT_REF_EN_MASK, st->int_ref_en);
+	val |= FIELD_PREP(AD4130_ADC_CONTROL_MODE_MASK, AD4130_MODE_IDLE);
+	val |= FIELD_PREP(AD4130_ADC_CONTROL_MCLK_SEL_MASK, st->mclk_sel);
+	val |= FIELD_PREP(AD4130_ADC_CONTROL_INT_REF_VAL_MASK, int_ref_val);
 
-	ret = regmap_write(st->regmap, AD4130_REG_ADC_CONTROL, val);
+	ret = regmap_write(st->regmap, AD4130_ADC_CONTROL_REG, val);
 	if (ret)
 		return ret;
 
-	val = FIELD_PREP(AD4130_INT_PIN_SEL_MASK, st->int_pin_sel);
+	val = FIELD_PREP(AD4130_IO_CONTROL_INT_PIN_SEL_MASK, st->int_pin_sel);
 	for (i = 0; i < st->num_gpios; i++)
 		val |= BIT(st->gpio_offsets[i]);
 
-	ret = regmap_write(st->regmap, AD4130_REG_IO_CONTROL, val);
+	ret = regmap_write(st->regmap, AD4130_IO_CONTROL_REG, val);
 	if (ret)
 		return ret;
 
@@ -1850,12 +1848,12 @@ static int ad4130_setup(struct iio_dev *indio_dev)
 	for (i = 0; i < st->num_vbias_pins; i++)
 		val |= BIT(st->vbias_pins[i]);
 
-	ret = regmap_write(st->regmap, AD4130_REG_VBIAS, val);
+	ret = regmap_write(st->regmap, AD4130_VBIAS_REG, val);
 	if (ret)
 		return ret;
 
-	ret = regmap_update_bits(st->regmap, AD4130_REG_FIFO_CONTROL,
-				 AD4130_ADD_FIFO_HEADER_MASK, 0);
+	ret = regmap_update_bits(st->regmap, AD4130_FIFO_CONTROL_REG,
+				 AD4130_FIFO_CONTROL_HEADER_MASK, 0);
 	if (ret)
 		return ret;
 
@@ -1870,12 +1868,12 @@ static int ad4130_setup(struct iio_dev *indio_dev)
 		struct iio_chan_spec *chan = &st->chans[i];
 		unsigned int val;
 
-		val = FIELD_PREP(AD4130_AINP_MASK, chan->channel) |
-		      FIELD_PREP(AD4130_AINM_MASK, chan->channel2) |
-		      FIELD_PREP(AD4130_IOUT1_MASK, chan_info->iout0) |
-		      FIELD_PREP(AD4130_IOUT2_MASK, chan_info->iout1);
+		val = FIELD_PREP(AD4130_CHANNEL_AINP_MASK, chan->channel) |
+		      FIELD_PREP(AD4130_CHANNEL_AINM_MASK, chan->channel2) |
+		      FIELD_PREP(AD4130_CHANNEL_IOUT1_MASK, chan_info->iout0) |
+		      FIELD_PREP(AD4130_CHANNEL_IOUT2_MASK, chan_info->iout1);
 
-		ret = regmap_write(st->regmap, AD4130_REG_CHANNEL_X(i), val);
+		ret = regmap_write(st->regmap, AD4130_CHANNEL_X_REG(i), val);
 		if (ret)
 			return ret;
 	}
@@ -1891,7 +1889,7 @@ static int ad4130_soft_reset(struct ad4130_state *st)
 	if (ret)
 		return ret;
 
-	fsleep(AD4130_SOFT_RESET_SLEEP_US);
+	fsleep(AD4130_RESET_SLEEP_US);
 
 	return 0;
 }
@@ -1933,7 +1931,7 @@ static int ad4130_probe(struct spi_device *spi)
 	 * Master:  0x7D N   ......................
 	 * Slave:   ......   DATA1 DATA2 ... DATAN
 	 */
-	st->fifo_tx_buf[0] = AD4130_COMMS_READ_MASK | AD4130_REG_FIFO_DATA;
+	st->fifo_tx_buf[0] = AD4130_COMMS_READ_MASK | AD4130_FIFO_DATA_REG;
 	st->fifo_xfer[0].tx_buf = st->fifo_tx_buf;
 	st->fifo_xfer[0].len = sizeof(st->fifo_tx_buf);
 	st->fifo_xfer[1].rx_buf = st->fifo_rx_buf;
