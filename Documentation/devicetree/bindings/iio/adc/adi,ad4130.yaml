@@ -37,15 +37,15 @@ properties:
     maxItems: 1
 
   interrupt-names:
-    description: |
+    description:
       Specify which interrupt pin should be configured as Data Ready / FIFO
       interrupt.
-      Default if not supplied is dout-int.
     enum:
       - dout-int
       - clk
       - p2
       - dout
+    default: dout-int
 
   '#address-cells':
     const: 1
