@@ -777,6 +777,40 @@ static int ad4130_set_channel_enable(struct ad4130_state *st,
 	return 0;
 }
 
+/*
+ * Table 58. FILTER_MODE_n bits and Filter Types of the datasheet describes
+ * the relation between filter mode, ODR and FS.
+ *
+ * Notice that the max ODR of each filter mode is not necessarily the
+ * absolute max ODR supported by the chip.
+ *
+ * The ODR divider is not explicitly specified, but it can be deduced based
+ * on the ODR range of each filter mode.
+ *
+ * For example, for Sinc4+Sinc1, max ODR is 218.18. That means that the
+ * absolute max ODR is divided by 11 to achieve the max ODR of this filter
+ * mode.
+ *
+ * The formulas for converting between ODR and FS for a specific filter
+ * mode can be deduced from the same table.
+ *
+ * Notice that FS = 1 actually means max ODR, and that ODR decreases by
+ * (maximum ODR / maximum FS) for each increment of FS.
+ *
+ * odr = MAX_ODR / odr_div * (1 - (fs - 1) / fs_max) <=>
+ * odr = MAX_ODR * (1 - (fs - 1) / fs_max) / odr_div <=>
+ * odr = MAX_ODR * (1 - (fs - 1) / fs_max) / odr_div <=>
+ * odr = MAX_ODR * (fs_max - fs + 1) / (fs_max * odr_div)
+ * (used in ad4130_fs_to_freq)
+ *
+ * For the opposite formula, FS can be extracted from the last one.
+ *
+ * MAX_ODR * (fs_max - fs + 1) = fs_max * odr_div * odr <=>
+ * fs_max - fs + 1 = fs_max * odr_div * odr / MAX_ODR <=>
+ * fs = 1 + fs_max - fs_max * odr_div * odr / MAX_ODR
+ * (used in ad4130_fs_to_freq)
+ */
+
 static void ad4130_freq_to_fs(enum ad4130_filter_mode filter_mode,
 			      int val, int val2, unsigned int *fs)
 {
@@ -836,6 +870,12 @@ static int ad4130_set_filter_mode(struct iio_dev *indio_dev,
 	old_fs = setup_info->fs;
 	old_filter_mode = setup_info->filter_mode;
 
+	/*
+	 * When switching between filter modes, try to match the ODR as
+	 * close as possible. To do this, convert the current FS into ODR
+	 * using the old filter mode, then convert it back into FS using
+	 * the new filter mode.
+	 */
 	ad4130_fs_to_freq(setup_info->filter_mode, setup_info->fs,
 			  &freq_val, &freq_val2);
 
