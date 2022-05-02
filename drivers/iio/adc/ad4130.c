@@ -106,6 +106,7 @@
 #define AD4130_MAX_PGA				8
 #define AD4130_MAX_SETUPS			8
 
+#define AD4130_AIN0				0x0
 #define AD4130_AIN2_P1				0x2
 #define AD4130_AIN3_P2				0x3
 
@@ -1589,6 +1590,7 @@ static int ad4130_parse_fw_channel(struct iio_dev *indio_dev,
 	if (ret)
 		return ret;
 
+	chan_info->iout0 = AD4130_AIN0;
 	fwnode_property_read_u32(child, "adi,excitation-pin-0",
 				 &chan_info->iout0);
 	if (chan_info->setup.iout0_val != AD4130_IOUT_OFF) {
@@ -1597,6 +1599,7 @@ static int ad4130_parse_fw_channel(struct iio_dev *indio_dev,
 			return ret;
 	}
 
+	chan_info->iout1 = AD4130_AIN0;
 	fwnode_property_read_u32(child, "adi,excitation-pin-1",
 				 &chan_info->iout1);
 	if (chan_info->setup.iout1_val != AD4130_IOUT_OFF) {
