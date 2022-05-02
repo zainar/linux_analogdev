@@ -303,7 +303,7 @@ struct ad4130_state {
 	 * DMA (thus cache coherency maintenance) requires the
 	 * transfer buffers to live in their own cache lines.
 	 */
-	u8			reset_buf[AD4130_RESET_BUF_SIZE] ____cacheline_aligned;
+	u8			reset_buf[AD4130_RESET_BUF_SIZE] __aligned(IIO_ALIGN);
 	u8			reg_write_tx_buf[4];
 	u8			reg_read_tx_buf[1];
 	u8			reg_read_rx_buf[3];
