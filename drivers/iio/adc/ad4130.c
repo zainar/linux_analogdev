@@ -1624,11 +1624,11 @@ static int ad4130_parse_fw_children(struct iio_dev *indio_dev)
 		ret = ad4130_parse_fw_channel(indio_dev, child);
 		if (ret) {
 			fwnode_handle_put(child);
-			break;
+			return ret;
 		}
 	}
 
-	return ret;
+	return 0;
 }
 
 static int ad4310_parse_fw(struct iio_dev *indio_dev)
