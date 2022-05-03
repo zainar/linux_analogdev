@@ -1671,7 +1671,7 @@ static int ad4310_parse_fw(struct iio_dev *indio_dev)
 		return dev_err_probe(dev, -EINVAL,
 				     "Cannot expose internal clock\n");
 
-	device_property_read_u32(dev, "adi,ext-clk-freq", &ext_clk_freq);
+	device_property_read_u32(dev, "adi,ext-clk-freq-hz", &ext_clk_freq);
 	if (ext_clk_freq != AD4130_MCLK_FREQ_153_6KHZ &&
 	    ext_clk_freq != AD4130_MCLK_FREQ_76_8KHZ)
 		return dev_err_probe(dev, -EINVAL,
