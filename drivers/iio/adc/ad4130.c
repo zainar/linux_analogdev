@@ -1200,11 +1200,14 @@ static int ad4130_set_fifo_watermark(struct iio_dev *indio_dev, unsigned int val
 	if (val > AD4130_FIFO_SIZE)
 		return -EINVAL;
 
+	eff = val * st->num_enabled_channels;
+
 	/*
 	 * Always set watermark to a multiple of the number of enabled channels
 	 * to avoid making the FIFO unaligned.
 	 */
-	eff = rounddown(val, st->num_enabled_channels);
+	if (eff > AD4130_FIFO_SIZE)
+		eff = rounddown(AD4130_FIFO_SIZE, st->num_enabled_channels);
 
 	mutex_lock(&st->lock);
 
