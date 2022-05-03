@@ -72,7 +72,7 @@ properties:
     description: Specify if the internal clock should be exposed on the CLK pin.
     type: boolean
 
-  adi,ext-clk-freq:
+  adi,ext-clk-freq-hz:
     description: Specify the frequency of the external clock.
     $ref: /schemas/types.yaml#/definitions/uint32
     enum: [76800, 153600]
