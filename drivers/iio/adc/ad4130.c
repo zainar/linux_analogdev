@@ -2044,7 +2044,7 @@ static const struct of_device_id ad4130_of_match[] = {
 		.compatible = "adi,ad4130-8-24-wlcsp",
 		.data = &ad4130_chip_info_tbl[ID_AD4130_8_24_WLCSP],
 	},
-	{ },
+	{ }
 };
 MODULE_DEVICE_TABLE(of, ad4130_of_match);
 
