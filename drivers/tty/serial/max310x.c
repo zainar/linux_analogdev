@@ -1466,6 +1466,7 @@ static const struct of_device_id __maybe_unused max310x_dt_ids[] = {
 };
 MODULE_DEVICE_TABLE(of, max310x_dt_ids);
 
+#ifdef CONFIG_SPI_MASTER
 static struct regmap_config regcfg = {
 	.reg_bits = 8,
 	.val_bits = 8,
@@ -1476,7 +1477,6 @@ static struct regmap_config regcfg = {
 	.precious_reg = max310x_reg_precious,
 };
 
-#ifdef CONFIG_SPI_MASTER
 static int max310x_spi_probe(struct spi_device *spi)
 {
 	const struct max310x_devtype *devtype;
