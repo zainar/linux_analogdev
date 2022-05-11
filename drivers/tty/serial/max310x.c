@@ -245,6 +245,9 @@
 #define MAX14830_BRGCFG_CLKDIS_BIT	(1 << 6) /* Clock Disable */
 #define MAX14830_REV_ID			(0xb0)
 
+struct max310x_if_ops {
+};
+
 struct max310x_devtype {
 	char	name[9];
 	int	nr;
@@ -268,6 +271,7 @@ struct max310x_one {
 
 struct max310x_port {
 	const struct max310x_devtype *devtype;
+	const struct max310x_if_ops *if_ops;
 	struct regmap		*regmap;
 	struct clk		*clk;
 #ifdef CONFIG_GPIOLIB
@@ -1271,6 +1275,7 @@ static int max310x_gpio_set_config(struct gpio_chip *chip, unsigned int offset,
 #endif
 
 static int max310x_probe(struct device *dev, const struct max310x_devtype *devtype,
+			 const struct max310x_if_ops *if_ops,
 			 struct regmap *regmap, int irq)
 {
 	int i, ret, fmin, fmax, freq, uartclk;
@@ -1320,6 +1325,7 @@ static int max310x_probe(struct device *dev, const struct max310x_devtype *devty
 
 	s->regmap = regmap;
 	s->devtype = devtype;
+	s->if_ops = if_ops;
 	dev_set_drvdata(dev, s);
 
 	/* Check device to ensure we are talking to what we expect */
@@ -1477,6 +1483,9 @@ static struct regmap_config regcfg = {
 	.precious_reg = max310x_reg_precious,
 };
 
+static const struct max310x_if_ops max310x_spi_if_ops = {
+};
+
 static int max310x_spi_probe(struct spi_device *spi)
 {
 	const struct max310x_devtype *devtype;
@@ -1498,7 +1507,8 @@ static int max310x_spi_probe(struct spi_device *spi)
 	regcfg.max_register = devtype->nr * 0x20 - 1;
 	regmap = devm_regmap_init_spi(spi, &regcfg);
 
-	return max310x_probe(&spi->dev, devtype, regmap, spi->irq);
+	return max310x_probe(&spi->dev, devtype, &max310x_spi_if_ops,
+			     regmap, spi->irq);
 }
 
 static int max310x_spi_remove(struct spi_device *spi)
