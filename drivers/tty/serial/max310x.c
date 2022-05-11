@@ -771,7 +771,8 @@ static void max310x_handle_tx(struct uart_port *port)
 
 		if (until_end < to_send) {
 			/* It's a circ buffer -- wrap around.
-			 * We could do that in one SPI transaction, but meh. */
+			 * We could do that in one transaction, but meh.
+			 */
 			max310x_batch_write(port, xmit->buf + xmit->tail, until_end);
 			max310x_batch_write(port, xmit->buf, to_send - until_end);
 		} else {
@@ -1380,7 +1381,7 @@ static int max310x_probe(struct device *dev, const struct max310x_devtype *devty
 		INIT_WORK(&s->p[i].md_work, max310x_md_proc);
 		/* Initialize queue for changing RS485 mode */
 		INIT_WORK(&s->p[i].rs_work, max310x_rs_proc);
-		/* Initialize SPI-transfer buffers */
+		/* Initialize transfer buffers */
 		s->p[i].wr_header = (s->p[i].port.iobase + MAX310X_THR_REG) |
 				    MAX310X_WRITE_BIT;
 		s->p[i].rd_header = (s->p[i].port.iobase + MAX310X_RHR_REG);
