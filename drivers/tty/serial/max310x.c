@@ -72,7 +72,7 @@
 #define MAX310X_GLOBALCMD_REG		MAX310X_REG_1F /* Global Command (WO) */
 
 /* Extended registers */
-#define MAX310X_REVID_EXTREG		MAX310X_REG_05 /* Revision ID */
+#define MAX310X_SPI_REVID_EXTREG	MAX310X_REG_05 /* Revision ID */
 
 /* IRQ register bits */
 #define MAX310X_IRQ_LSR_BIT		(1 << 0) /* LSR interrupt */
@@ -248,6 +248,9 @@
 struct max310x_if_ops {
 	void (*batch_write)(struct uart_port *port, u8 *reg, unsigned int val);
 	void (*batch_read)(struct uart_port *port, u8 *reg, unsigned int val);
+	int (*set_ext_reg_en)(struct device *dev, bool enable);
+
+	unsigned int rev_id_reg;
 };
 
 struct max310x_devtype {
@@ -357,19 +360,26 @@ static int max3108_detect(struct device *dev)
 	return 0;
 }
 
+static int max310x_spi_set_ext_reg_en(struct device *dev, bool enable)
+{
+	struct max310x_port *s = dev_get_drvdata(dev);
+
+	return regmap_write(s->regmap, MAX310X_GLOBALCMD_REG,
+			    enable ? MAX310X_EXTREG_ENBL : MAX310X_EXTREG_DSBL);
+}
+
 static int max3109_detect(struct device *dev)
 {
 	struct max310x_port *s = dev_get_drvdata(dev);
 	unsigned int val = 0;
 	int ret;
 
-	ret = regmap_write(s->regmap, MAX310X_GLOBALCMD_REG,
-			   MAX310X_EXTREG_ENBL);
+	ret = s->if_ops->set_ext_reg_en(dev, true);
 	if (ret)
 		return ret;
 
-	regmap_read(s->regmap, MAX310X_REVID_EXTREG, &val);
-	regmap_write(s->regmap, MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_DSBL);
+	regmap_read(s->regmap, s->if_ops->rev_id_reg, &val);
+	s->if_ops->set_ext_reg_en(dev, false);
 	if (((val & MAX310x_REV_MASK) != MAX3109_REV_ID)) {
 		dev_err(dev,
 			"%s ID 0x%02x does not match\n", s->devtype->name, val);
@@ -394,13 +404,12 @@ static int max14830_detect(struct device *dev)
 	unsigned int val = 0;
 	int ret;
 
-	ret = regmap_write(s->regmap, MAX310X_GLOBALCMD_REG,
-			   MAX310X_EXTREG_ENBL);
+	ret = s->if_ops->set_ext_reg_en(dev, true);
 	if (ret)
 		return ret;
 	
-	regmap_read(s->regmap, MAX310X_REVID_EXTREG, &val);
-	regmap_write(s->regmap, MAX310X_GLOBALCMD_REG, MAX310X_EXTREG_DSBL);
+	regmap_read(s->regmap, s->if_ops->rev_id_reg, &val);
+	s->if_ops->set_ext_reg_en(dev, false);
 	if (((val & MAX310x_REV_MASK) != MAX14830_REV_ID)) {
 		dev_err(dev,
 			"%s ID 0x%02x does not match\n", s->devtype->name, val);
@@ -1495,6 +1504,8 @@ static struct regmap_config regcfg = {
 static const struct max310x_if_ops max310x_spi_if_ops = {
 	.batch_write = max310x_spi_batch_write,
 	.batch_read = max310x_spi_batch_read,
+	.set_ext_reg_en = max310x_spi_set_ext_reg_en,
+	.rev_id_reg = MAX310X_SPI_REVID_EXTREG,
 };
 
 static int max310x_spi_probe(struct spi_device *spi)
