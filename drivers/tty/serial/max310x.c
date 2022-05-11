@@ -22,8 +22,11 @@
 #include <linux/serial.h>
 #include <linux/tty.h>
 #include <linux/tty_flip.h>
-#include <linux/spi/spi.h>
 #include <linux/uaccess.h>
+
+#ifdef CONFIG_SPI_MASTER
+#include <linux/spi/spi.h>
+#endif
 
 #define MAX310X_NAME			"max310x"
 #define MAX310X_MAJOR			204
@@ -302,6 +305,7 @@ static struct uart_driver max310x_uart = {
 
 static DECLARE_BITMAP(max310x_lines, MAX310X_UART_NRMAX);
 
+#ifdef CONFIG_SPI_MASTER
 static int max310x_spi_port_read_raw(struct device *dev, unsigned int nr,
 				     u8 reg, unsigned int *val)
 {
@@ -326,6 +330,7 @@ static int max310x_spi_port_update_raw(struct device *dev, unsigned int nr,
 	return regmap_update_bits(s->regmap, MAX310X_SPI_PORT_REG(nr, reg),
 				  mask, val);
 }
+#endif
 
 static u8 max310x_port_read(struct uart_port *port, u8 reg)
 {
@@ -391,6 +396,7 @@ static int max3108_detect(struct device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_SPI_MASTER
 static int max310x_spi_set_ext_reg_en(struct device *dev, bool enable)
 {
 	struct max310x_port *s = dev_get_drvdata(dev);
@@ -398,6 +404,7 @@ static int max310x_spi_set_ext_reg_en(struct device *dev, bool enable)
 	return regmap_write(s->regmap, MAX310X_GLOBALCMD_REG,
 			    enable ? MAX310X_EXTREG_ENBL : MAX310X_EXTREG_DSBL);
 }
+#endif
 
 static int max3109_detect(struct device *dev)
 {
@@ -667,6 +674,7 @@ static int max310x_set_ref_clk(struct device *dev, struct max310x_port *s,
 	return (int)bestfreq;
 }
 
+#ifdef CONFIG_SPI_MASTER
 static void max310x_spi_batch_write(struct uart_port *port, u8 *txbuf,
 				    unsigned int len)
 {
@@ -684,6 +692,7 @@ static void max310x_spi_batch_read(struct uart_port *port, u8 *rxbuf,
 
 	regmap_raw_read(s->regmap, reg, rxbuf, len);
 }
+#endif
 
 static void max310x_handle_rx(struct uart_port *port, unsigned int rxlen)
 {
