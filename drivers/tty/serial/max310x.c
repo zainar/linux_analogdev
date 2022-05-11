@@ -246,6 +246,8 @@
 #define MAX14830_REV_ID			(0xb0)
 
 struct max310x_if_ops {
+	void (*batch_write)(struct uart_port *port, u8 *reg, unsigned int val);
+	void (*batch_read)(struct uart_port *port, u8 *reg, unsigned int val);
 };
 
 struct max310x_devtype {
@@ -625,7 +627,8 @@ static int max310x_set_ref_clk(struct device *dev, struct max310x_port *s,
 	return (int)bestfreq;
 }
 
-static void max310x_batch_write(struct uart_port *port, u8 *txbuf, unsigned int len)
+static void max310x_spi_batch_write(struct uart_port *port, u8 *txbuf,
+				    unsigned int len)
 {
 	struct max310x_one *one = to_max310x_port(port);
 	struct spi_transfer xfer[] = {
@@ -640,7 +643,8 @@ static void max310x_batch_write(struct uart_port *port, u8 *txbuf, unsigned int 
 	spi_sync_transfer(to_spi_device(port->dev), xfer, ARRAY_SIZE(xfer));
 }
 
-static void max310x_batch_read(struct uart_port *port, u8 *rxbuf, unsigned int len)
+static void max310x_spi_batch_read(struct uart_port *port, u8 *rxbuf,
+				   unsigned int len)
 {
 	struct max310x_one *one = to_max310x_port(port);
 	struct spi_transfer xfer[] = {
@@ -657,6 +661,7 @@ static void max310x_batch_read(struct uart_port *port, u8 *rxbuf, unsigned int l
 
 static void max310x_handle_rx(struct uart_port *port, unsigned int rxlen)
 {
+	struct max310x_port *s = dev_get_drvdata(port->dev);
 	struct max310x_one *one = to_max310x_port(port);
 	unsigned int sts, ch, flag, i;
 
@@ -673,7 +678,7 @@ static void max310x_handle_rx(struct uart_port *port, unsigned int rxlen)
 		 * */
 
 		sts = max310x_port_read(port, MAX310X_LSR_IRQSTS_REG);
-		max310x_batch_read(port, one->rx_buf, rxlen);
+		s->if_ops->batch_read(port, one->rx_buf, rxlen);
 
 		port->icount.rx += rxlen;
 		flag = TTY_NORMAL;
@@ -751,6 +756,7 @@ static void max310x_handle_rx(struct uart_port *port, unsigned int rxlen)
 
 static void max310x_handle_tx(struct uart_port *port)
 {
+	struct max310x_port *s = dev_get_drvdata(port->dev);
 	struct circ_buf *xmit = &port->state->xmit;
 	unsigned int txlen, to_send, until_end;
 
@@ -777,10 +783,13 @@ static void max310x_handle_tx(struct uart_port *port)
 			/* It's a circ buffer -- wrap around.
 			 * We could do that in one transaction, but meh.
 			 */
-			max310x_batch_write(port, xmit->buf + xmit->tail, until_end);
-			max310x_batch_write(port, xmit->buf, to_send - until_end);
+			s->if_ops->batch_write(port, xmit->buf + xmit->tail,
+					       until_end);
+			s->if_ops->batch_write(port, xmit->buf,
+					       to_send - until_end);
 		} else {
-			max310x_batch_write(port, xmit->buf + xmit->tail, to_send);
+			s->if_ops->batch_write(port, xmit->buf + xmit->tail,
+					       to_send);
 		}
 
 		/* Add data to send */
@@ -1484,6 +1493,8 @@ static struct regmap_config regcfg = {
 };
 
 static const struct max310x_if_ops max310x_spi_if_ops = {
+	.batch_write = max310x_spi_batch_write,
+	.batch_read = max310x_spi_batch_read,
 };
 
 static int max310x_spi_probe(struct spi_device *spi)
