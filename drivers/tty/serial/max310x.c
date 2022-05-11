@@ -16,7 +16,10 @@
 #include <linux/gpio/driver.h>
 #include <linux/module.h>
 #include <linux/mod_devicetable.h>
+#include <linux/mutex.h>
 #include <linux/property.h>
+#include <linux/of.h>
+#include <linux/of_device.h>
 #include <linux/regmap.h>
 #include <linux/serial_core.h>
 #include <linux/serial.h>
@@ -26,6 +29,10 @@
 
 #ifdef CONFIG_SPI_MASTER
 #include <linux/spi/spi.h>
+#endif
+
+#ifdef CONFIG_I2C
+#include <linux/i2c.h>
 #endif
 
 #define MAX310X_NAME			"max310x"
@@ -76,6 +83,7 @@
 
 /* Extended registers */
 #define MAX310X_SPI_REVID_EXTREG	MAX310X_REG_05 /* Revision ID */
+#define MAX310X_I2C_REVID_EXTREG	(0x25) /* Revision ID */
 
 /* IRQ register bits */
 #define MAX310X_IRQ_LSR_BIT		(1 << 0) /* LSR interrupt */
@@ -265,6 +273,10 @@ struct max310x_if_ops {
 };
 
 struct max310x_devtype {
+	struct {
+		unsigned short min;
+		unsigned short max;
+	} slave_addr;
 	char	name[9];
 	int	nr;
 	u8	mode1;
@@ -291,6 +303,8 @@ struct max310x_port {
 #ifdef CONFIG_GPIOLIB
 	struct gpio_chip	gpio;
 #endif
+	/* Used for protecting I2C slave address swap. */
+	struct mutex		lock;
 	struct max310x_one	p[0];
 };
 
@@ -329,6 +343,83 @@ static int max310x_spi_port_update_raw(struct device *dev, unsigned int nr,
 
 	return regmap_update_bits(s->regmap, MAX310X_SPI_PORT_REG(nr, reg),
 				  mask, val);
+}
+#endif
+
+#ifdef CONFIG_I2C
+static unsigned short max310x_i2c_slave_addr(unsigned short addr,
+					     unsigned int nr)
+{
+	/*
+	 * For MAX14830 and MAX3109, the slave address depends on what the
+	 * A0 and A1 pins are tied to.
+	 * See Table I2C Address Map of the datasheet.
+	 * Based on that table, the following formulas were determined.
+	 * UART1 - UART0 = 0x10
+	 * UART2 - UART1 = 0x20 + 0x10
+	 * UART3 - UART2 = 0x10
+	 */
+
+	addr -= nr * 0x10;
+
+	if (nr >= 2)
+		addr -= 0x20;
+
+	return addr;
+}
+
+static int max310x_i2c_port_read_raw(struct device *dev, unsigned int nr,
+				     u8 reg, unsigned int *val)
+{
+	struct max310x_port *s = dev_get_drvdata(dev);
+	struct i2c_client *i2c = to_i2c_client(dev);
+	unsigned short addr;
+	int ret;
+
+	mutex_lock(&s->lock);
+	addr = i2c->addr;
+	i2c->addr = max310x_i2c_slave_addr(addr, nr);
+	ret = regmap_read(s->regmap, reg, val);
+	i2c->addr = addr;
+	mutex_unlock(&s->lock);
+
+	return ret;
+}
+
+static int max310x_i2c_port_write_raw(struct device *dev, unsigned int nr,
+				      u8 reg, u8 val)
+{
+	struct max310x_port *s = dev_get_drvdata(dev);
+	struct i2c_client *i2c = to_i2c_client(dev);
+	unsigned short addr;
+	int ret;
+
+	mutex_lock(&s->lock);
+	addr = i2c->addr;
+	i2c->addr = max310x_i2c_slave_addr(addr, nr);
+	ret = regmap_write(s->regmap, reg, val);
+	i2c->addr = addr;
+	mutex_unlock(&s->lock);
+
+	return ret;
+}
+
+static int max310x_i2c_port_update_raw(struct device *dev, unsigned int nr,
+				       u8 reg, u8 mask, u8 val)
+{
+	struct max310x_port *s = dev_get_drvdata(dev);
+	struct i2c_client *i2c = to_i2c_client(dev);
+	unsigned short addr;
+	int ret;
+
+	mutex_lock(&s->lock);
+	addr = i2c->addr;
+	i2c->addr = max310x_i2c_slave_addr(addr, nr);
+	ret = regmap_update_bits(s->regmap, reg, mask, val);
+	i2c->addr = addr;
+	mutex_unlock(&s->lock);
+
+	return ret;
 }
 #endif
 
@@ -406,6 +497,13 @@ static int max310x_spi_set_ext_reg_en(struct device *dev, bool enable)
 }
 #endif
 
+#ifdef CONFIG_I2C
+static int max310x_i2c_set_ext_reg_en(struct device *dev, bool enable)
+{
+	return 0;
+}
+#endif
+
 static int max3109_detect(struct device *dev)
 {
 	struct max310x_port *s = dev_get_drvdata(dev);
@@ -472,6 +570,10 @@ static const struct max310x_devtype max3107_devtype = {
 	.mode1	= MAX310X_MODE1_AUTOSLEEP_BIT | MAX310X_MODE1_IRQSEL_BIT,
 	.detect	= max3107_detect,
 	.power	= max310x_power,
+	.slave_addr	= {
+		.min = 0x2c,
+		.max = 0x2f,
+	},
 };
 
 static const struct max310x_devtype max3108_devtype = {
@@ -480,6 +582,10 @@ static const struct max310x_devtype max3108_devtype = {
 	.mode1	= MAX310X_MODE1_AUTOSLEEP_BIT,
 	.detect	= max3108_detect,
 	.power	= max310x_power,
+	.slave_addr	= {
+		.min = 0x60,
+		.max = 0x6f,
+	},
 };
 
 static const struct max310x_devtype max3109_devtype = {
@@ -488,6 +594,10 @@ static const struct max310x_devtype max3109_devtype = {
 	.mode1	= MAX310X_MODE1_AUTOSLEEP_BIT,
 	.detect	= max3109_detect,
 	.power	= max310x_power,
+	.slave_addr	= {
+		.min = 0x60,
+		.max = 0x6f,
+	},
 };
 
 static const struct max310x_devtype max14830_devtype = {
@@ -496,6 +606,10 @@ static const struct max310x_devtype max14830_devtype = {
 	.mode1	= MAX310X_MODE1_IRQSEL_BIT,
 	.detect	= max14830_detect,
 	.power	= max14830_power,
+	.slave_addr	= {
+		.min = 0x60,
+		.max = 0x6f,
+	},
 };
 
 static bool max310x_reg_writeable(struct device *dev, unsigned int reg)
@@ -691,6 +805,38 @@ static void max310x_spi_batch_read(struct uart_port *port, u8 *rxbuf,
 	u8 reg = MAX310X_SPI_PORT_REG(port->iobase, MAX310X_RHR_REG);
 
 	regmap_raw_read(s->regmap, reg, rxbuf, len);
+}
+#endif
+
+#ifdef CONFIG_I2C
+static void max310x_i2c_batch_write(struct uart_port *port, u8 *txbuf,
+				    unsigned int len)
+{
+	struct max310x_port *s = dev_get_drvdata(port->dev);
+	struct i2c_client *i2c = to_i2c_client(port->dev);
+	unsigned short addr;
+
+	mutex_lock(&s->lock);
+	addr = i2c->addr;
+	i2c->addr = max310x_i2c_slave_addr(addr, port->iobase);
+	regmap_raw_write(s->regmap, MAX310X_THR_REG, txbuf, len);
+	i2c->addr = addr;
+	mutex_unlock(&s->lock);
+}
+
+static void max310x_i2c_batch_read(struct uart_port *port, u8 *rxbuf,
+				   unsigned int len)
+{
+	struct max310x_port *s = dev_get_drvdata(port->dev);
+	struct i2c_client *i2c = to_i2c_client(port->dev);
+	unsigned short addr;
+
+	mutex_lock(&s->lock);
+	addr = i2c->addr;
+	i2c->addr = max310x_i2c_slave_addr(addr, port->iobase);
+	regmap_raw_read(s->regmap, MAX310X_RHR_REG, rxbuf, len);
+	i2c->addr = addr;
+	mutex_unlock(&s->lock);
 }
 #endif
 
@@ -1370,6 +1516,7 @@ static int max310x_probe(struct device *dev, const struct max310x_devtype *devty
 	s->regmap = regmap;
 	s->devtype = devtype;
 	s->if_ops = if_ops;
+	mutex_init(&s->lock);
 	dev_set_drvdata(dev, s);
 
 	/* Check device to ensure we are talking to what we expect */
@@ -1584,6 +1731,62 @@ static struct spi_driver max310x_spi_driver = {
 };
 #endif
 
+#ifdef CONFIG_I2C
+static struct regmap_config max310x_i2c_regcfg = {
+	.reg_bits = 8,
+	.val_bits = 8,
+	.cache_type = REGCACHE_RBTREE,
+	.writeable_reg = max310x_reg_writeable,
+	.volatile_reg = max310x_reg_volatile,
+	.precious_reg = max310x_reg_precious,
+	.max_register = MAX310X_I2C_REVID_EXTREG,
+};
+
+static const struct max310x_if_ops max310x_i2c_if_ops = {
+	.port_read_raw = max310x_i2c_port_read_raw,
+	.port_write_raw = max310x_i2c_port_write_raw,
+	.port_update_raw = max310x_i2c_port_update_raw,
+	.batch_write = max310x_i2c_batch_write,
+	.batch_read = max310x_i2c_batch_read,
+	.set_ext_reg_en = max310x_i2c_set_ext_reg_en,
+	.rev_id_reg = MAX310X_I2C_REVID_EXTREG,
+};
+
+static int max310x_i2c_probe(struct i2c_client *client)
+{
+	const struct max310x_devtype *devtype =
+			device_get_match_data(&client->dev);
+	struct regmap *regmap;
+
+	if (client->addr < devtype->slave_addr.min ||
+		client->addr > devtype->slave_addr.max)
+		return dev_err_probe(&client->dev, -EINVAL,
+				     "Slave addr 0x%x outside of range [0x%x, 0x%x]\n",
+				     client->addr, devtype->slave_addr.min,
+				     devtype->slave_addr.max);
+
+	regmap = devm_regmap_init_i2c(client, &max310x_i2c_regcfg);
+
+	return max310x_probe(&client->dev, devtype, &max310x_i2c_if_ops,
+			     regmap, client->irq);
+}
+
+static int max310x_i2c_remove(struct i2c_client *client)
+{
+	return max310x_remove(&client->dev);
+}
+
+static struct i2c_driver max310x_i2c_driver = {
+	.driver = {
+		.name		= MAX310X_NAME,
+		.of_match_table	= max310x_dt_ids,
+		.pm		= &max310x_pm_ops,
+	},
+	.probe_new	= max310x_i2c_probe,
+	.remove		= max310x_i2c_remove,
+};
+#endif
+
 static int __init max310x_uart_init(void)
 {
 	int ret;
@@ -1597,8 +1800,22 @@ static int __init max310x_uart_init(void)
 #ifdef CONFIG_SPI_MASTER
 	ret = spi_register_driver(&max310x_spi_driver);
 	if (ret)
-		uart_unregister_driver(&max310x_uart);
+		goto err_spi_register;
 #endif
+
+#ifdef CONFIG_I2C
+	ret = i2c_add_driver(&max310x_i2c_driver);
+	if (ret)
+		goto err_i2c_register;
+#endif
+
+	return 0;
+
+err_spi_register:
+	spi_unregister_driver(&max310x_spi_driver);
+
+err_i2c_register:
+	uart_unregister_driver(&max310x_uart);
 
 	return ret;
 }
@@ -1606,6 +1823,10 @@ module_init(max310x_uart_init);
 
 static void __exit max310x_uart_exit(void)
 {
+#ifdef CONFIG_I2C
+	i2c_del_driver(&max310x_i2c_driver);
+#endif
+
 #ifdef CONFIG_SPI_MASTER
 	spi_unregister_driver(&max310x_spi_driver);
 #endif
