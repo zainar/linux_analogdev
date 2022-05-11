@@ -1513,7 +1513,7 @@ static const struct of_device_id __maybe_unused max310x_dt_ids[] = {
 MODULE_DEVICE_TABLE(of, max310x_dt_ids);
 
 #ifdef CONFIG_SPI_MASTER
-static struct regmap_config regcfg = {
+static struct regmap_config max310x_spi_regcfg = {
 	.reg_bits = 8,
 	.val_bits = 8,
 	.write_flag_mask = MAX310X_WRITE_BIT,
@@ -1551,8 +1551,8 @@ static int max310x_spi_probe(struct spi_device *spi)
 	if (!devtype)
 		devtype = (struct max310x_devtype *)spi_get_device_id(spi)->driver_data;
 
-	regcfg.max_register = MAX310X_SPI_PORT_REG(devtype->nr, -1);
-	regmap = devm_regmap_init_spi(spi, &regcfg);
+	max310x_spi_regcfg.max_register = MAX310X_SPI_PORT_REG(devtype->nr, -1);
+	regmap = devm_regmap_init_spi(spi, &max310x_spi_regcfg);
 
 	return max310x_probe(&spi->dev, devtype, &max310x_spi_if_ops,
 			     regmap, spi->irq);
