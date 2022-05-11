@@ -246,6 +246,12 @@
 #define MAX14830_REV_ID			(0xb0)
 
 struct max310x_if_ops {
+	int (*port_read_raw)(struct device *dev, unsigned int nr, u8 reg,
+			     unsigned int *val);
+	int (*port_write_raw)(struct device *dev, unsigned int nr, u8 reg,
+			      u8 val);
+	int (*port_update_raw)(struct device *dev, unsigned int nr, u8 reg,
+			       u8 mask, u8 val);
 	void (*batch_write)(struct uart_port *port, u8 *reg, unsigned int val);
 	void (*batch_read)(struct uart_port *port, u8 *reg, unsigned int val);
 	int (*set_ext_reg_en)(struct device *dev, bool enable);
@@ -296,12 +302,36 @@ static struct uart_driver max310x_uart = {
 
 static DECLARE_BITMAP(max310x_lines, MAX310X_UART_NRMAX);
 
+static int max310x_spi_port_read_raw(struct device *dev, unsigned int nr,
+				     u8 reg, unsigned int *val)
+{
+	struct max310x_port *s = dev_get_drvdata(dev);
+
+	return regmap_read(s->regmap, nr + reg, val);
+}
+
+static int max310x_spi_port_write_raw(struct device *dev, unsigned int nr,
+				      u8 reg, u8 val)
+{
+	struct max310x_port *s = dev_get_drvdata(dev);
+
+	return regmap_write(s->regmap, nr + reg, val);
+}
+
+static int max310x_spi_port_update_raw(struct device *dev, unsigned int nr,
+				       u8 reg, u8 mask, u8 val)
+{
+	struct max310x_port *s = dev_get_drvdata(dev);
+
+	return regmap_update_bits(s->regmap, nr + reg, mask, val);
+}
+
 static u8 max310x_port_read(struct uart_port *port, u8 reg)
 {
 	struct max310x_port *s = dev_get_drvdata(port->dev);
 	unsigned int val = 0;
 
-	regmap_read(s->regmap, port->iobase + reg, &val);
+	s->if_ops->port_read_raw(port->dev, port->iobase, reg, &val);
 
 	return val;
 }
@@ -310,14 +340,14 @@ static void max310x_port_write(struct uart_port *port, u8 reg, u8 val)
 {
 	struct max310x_port *s = dev_get_drvdata(port->dev);
 
-	regmap_write(s->regmap, port->iobase + reg, val);
+	s->if_ops->port_write_raw(port->dev, port->iobase, reg, val);
 }
 
 static void max310x_port_update(struct uart_port *port, u8 reg, u8 mask, u8 val)
 {
 	struct max310x_port *s = dev_get_drvdata(port->dev);
 
-	regmap_update_bits(s->regmap, port->iobase + reg, mask, val);
+	s->if_ops->port_update_raw(port->dev, port->iobase, reg, mask, val);
 }
 
 static int max3107_detect(struct device *dev)
@@ -1353,21 +1383,22 @@ static int max310x_probe(struct device *dev, const struct max310x_devtype *devty
 
 	for (i = 0; i < devtype->nr; i++) {
 		unsigned int offs = i << 5;
+		unsigned int val = 0;
 
 		/* Reset port */
-		regmap_write(s->regmap, MAX310X_MODE2_REG + offs,
-			     MAX310X_MODE2_RST_BIT);
+		s->if_ops->port_write_raw(dev, offs, MAX310X_MODE2_REG,
+					  MAX310X_MODE2_RST_BIT);
 		/* Clear port reset */
-		regmap_write(s->regmap, MAX310X_MODE2_REG + offs, 0);
+		s->if_ops->port_write_raw(dev, offs, MAX310X_MODE2_REG, 0);
 
 		/* Wait for port startup */
 		do {
-			regmap_read(s->regmap,
-				    MAX310X_BRGDIVLSB_REG + offs, &ret);
-		} while (ret != 0x01);
+			s->if_ops->port_read_raw(dev, offs,
+						 MAX310X_BRGDIVLSB_REG, &val);
+		} while (val != 0x01);
 
-		regmap_write(s->regmap, MAX310X_MODE1_REG + offs,
-			     devtype->mode1);
+		s->if_ops->port_write_raw(dev, offs, MAX310X_MODE1_REG,
+					  devtype->mode1);
 	}
 
 	uartclk = max310x_set_ref_clk(dev, s, freq, xtal);
@@ -1502,6 +1533,9 @@ static struct regmap_config regcfg = {
 };
 
 static const struct max310x_if_ops max310x_spi_if_ops = {
+	.port_read_raw = max310x_spi_port_read_raw,
+	.port_write_raw = max310x_spi_port_write_raw,
+	.port_update_raw = max310x_spi_port_update_raw,
 	.batch_write = max310x_spi_batch_write,
 	.batch_read = max310x_spi_batch_read,
 	.set_ext_reg_en = max310x_spi_set_ext_reg_en,
