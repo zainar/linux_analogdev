@@ -962,6 +962,26 @@ static void xiic_start_send(struct xiic_i2c *i2c)
 	i2c->prev_msg_tx = true;
 }
 
+static irqreturn_t xiic_isr(int irq, void *dev_id)
+{
+	struct xiic_i2c *i2c = dev_id;
+	u32 pend, isr, ier;
+	irqreturn_t ret = IRQ_NONE;
+	/* Do not processes a devices interrupts if the device has no
+	 * interrupts pending
+	 */
+
+	dev_dbg(i2c->adap.dev.parent, "%s entry\n", __func__);
+
+	isr = xiic_getreg32(i2c, XIIC_IISR_OFFSET);
+	ier = xiic_getreg32(i2c, XIIC_IIER_OFFSET);
+	pend = isr & ier;
+	if (pend)
+		ret = IRQ_WAKE_THREAD;
+
+	return ret;
+}
+
 static void __xiic_start_xfer(struct xiic_i2c *i2c)
 {
 	int first = 1;
@@ -1181,8 +1201,8 @@ static int xiic_i2c_probe(struct platform_device *pdev)
 	pm_runtime_use_autosuspend(i2c->dev);
 	pm_runtime_set_active(i2c->dev);
 	pm_runtime_enable(i2c->dev);
-	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-					xiic_process, IRQF_SHARED,
+	ret = devm_request_threaded_irq(&pdev->dev, irq, xiic_isr,
+					xiic_process, IRQF_ONESHOT | IRQF_SHARED,
 					pdev->name, i2c);
 
 	if (ret < 0) {
