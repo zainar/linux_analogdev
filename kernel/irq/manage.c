@@ -7,7 +7,7 @@
  */
 
 #define pr_fmt(fmt) "genirq: " fmt
-
+#define DEBUG
 #include <linux/irq.h>
 #include <linux/kthread.h>
 #include <linux/module.h>

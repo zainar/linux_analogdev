@@ -1182,7 +1182,7 @@ static int xiic_i2c_probe(struct platform_device *pdev)
 	pm_runtime_set_active(i2c->dev);
 	pm_runtime_enable(i2c->dev);
 	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
-					xiic_process, IRQF_ONESHOT,
+					xiic_process, IRQF_SHARED,
 					pdev->name, i2c);
 
 	if (ret < 0) {
