@@ -10,6 +10,8 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
+
+#define DEBUG
 #include <linux/delay.h>
 #include <linux/dmaengine.h>
 #include <linux/init.h>
@@ -540,6 +542,8 @@ static int dmatest_add_slave_threads(struct dmatest_chan *tx_dtc,
 	struct dma_chan *rx_chan = rx_dtc->chan;
 	int ret;
 
+    pr_info("-- %s --\n", __FUNC__);
+
 	thread = kzalloc(sizeof(struct dmatest_slave_thread), GFP_KERNEL);
 	if (!thread) {
 		pr_warn("dmatest: No memory for slave thread %s-%s\n",
@@ -578,6 +582,7 @@ static int dmatest_add_slave_channels(struct dma_chan *tx_chan,
 	struct dmatest_chan *rx_dtc;
 	unsigned int thread_count = 0;
 
+    pr_info(" -- %s --\n", __FUNC__);
 	tx_dtc = kmalloc(sizeof(struct dmatest_chan), GFP_KERNEL);
 	if (!tx_dtc) {
 		pr_warn("dmatest: No memory for tx %s\n",
@@ -618,6 +623,7 @@ static int xilinx_axidmatest_probe(struct platform_device *pdev)
 	struct dma_chan *chan, *rx_chan;
 	int err;
 
+    pr_info(" -- %s --\n", __FUNC__);
 	chan = dma_request_chan(&pdev->dev, "axidma0");
 	if (IS_ERR(chan)) {
 		err = PTR_ERR(chan);
