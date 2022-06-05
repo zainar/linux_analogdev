@@ -971,10 +971,6 @@ static irqreturn_t xiic_isr(int irq, void *dev_id)
 	 * interrupts pending
 	 */
 
-	//JRM -hacky hack
-	if (irq != 30)
-		return ret;
-
 	dev_dbg(i2c->adap.dev.parent, "%s entry irq=%d \n", __func__, irq);
 
 	isr = xiic_getreg32(i2c, XIIC_IISR_OFFSET);
