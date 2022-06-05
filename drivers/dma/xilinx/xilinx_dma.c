@@ -1815,6 +1815,8 @@ static irqreturn_t xilinx_dma_irq_handler(int irq, void *data)
 
 	if ((irq != 61) || (irq != 62))
 		return IRQ_NONE;
+	else
+		printk(" --> %s <-- Erroneous IRQ: %d  \n", __func__, irq);
 
 	/* Read the status and ack the interrupts. */
 	status = dma_ctrl_read(chan, XILINX_DMA_REG_DMASR);
