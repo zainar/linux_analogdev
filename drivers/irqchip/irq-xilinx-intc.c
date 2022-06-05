@@ -8,7 +8,7 @@
  * License. See the file "COPYING" in the main directory of this archive
  * for more details.
  */
-
+#define DEBUG
 #include <linux/irqdomain.h>
 #include <linux/irq.h>
 #include <linux/irqchip.h>
