@@ -1813,6 +1813,9 @@ static irqreturn_t xilinx_dma_irq_handler(int irq, void *data)
 	struct xilinx_dma_chan *chan = data;
 	u32 status;
 
+	if ((irq != 61) || (irq != 62))
+		return IRQ_NONE;
+
 	/* Read the status and ack the interrupts. */
 	status = dma_ctrl_read(chan, XILINX_DMA_REG_DMASR);
 	if (!(status & XILINX_DMA_DMAXR_ALL_IRQ_MASK))
