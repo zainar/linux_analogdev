@@ -377,6 +377,7 @@ struct ad9361_phy_platform_data {
 	struct gpio_desc			*cal_sw2_gpio;
 
 	bool		axi_half_dac_rate_en;
+    bool        dma_loopback_test;
 };
 
 struct rf_rx_gain {

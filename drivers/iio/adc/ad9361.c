@@ -8555,6 +8555,10 @@ static struct ad9361_phy_platform_data
 		return NULL;
 	}
 
+    ad9361_of_get_bool(iodev, np, "adi,dma-loopback-test", &pdata->dma_loopback_test);
+#ifdef _DEBUG
+    pr_debug("  Loopback test value 0x%x \n", pdata->dma_loopback_test);
+#endif
 	ad9361_of_get_bool(iodev, np, "adi,frequency-division-duplex-mode-enable",
 			   &pdata->fdd);
 
