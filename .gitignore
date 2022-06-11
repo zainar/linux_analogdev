@@ -42,6 +42,7 @@
 *.su
 *.symtypes
 *.tab.[ch]
+tags
 *.tar
 *.xz
 *.zst
