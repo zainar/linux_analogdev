@@ -404,6 +404,13 @@ config AD9208
 	  AD9208, AD9689, AD9695, AD9697, AD9694, AD6688, AD6684 high speed ADCs.
 	  Provides direct access via sysfs.
 
+config ZAINAR_DMATEST
+	tristate "Zainar DMA Loopback test client"
+	depends on XILINX_DMA
+	help
+	Simple DMA test client. Based off of XiLinx version called
+	axidmatest.c
+
 config AD9361
 	tristate "Analog Devices AD9361, AD9364 RF Agile Transceiver driver"
 	depends on SPI
