@@ -1078,7 +1078,7 @@ static int iio_dummy_remove(struct iio_sw_device *swd)
     /* Buffered capture related cleanup */
     iio_simple_dummy_unconfigure_buffer(indio_dev);
 
-    iio_simple_dummy_events_unregister(indio_dev);
+    zn_iio_simple_dummy_events_unregister(indio_dev);
 
     /* Free all structures */
     kfree(indio_dev->name);

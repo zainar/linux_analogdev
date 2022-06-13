@@ -245,7 +245,7 @@ int zn_iio_simple_dummy_events_register(struct iio_dev *indio_dev)
 		ret = st->event_irq;
 		goto error_ret;
 	}
-	st->regs = zn_iio_dummy_evgen_get_regs(st->event_irq);
+	st->regs = iio_dummy_evgen_get_regs(st->event_irq);
 
 	ret = request_threaded_irq(st->event_irq,
 				   &iio_simple_dummy_get_timestamp,

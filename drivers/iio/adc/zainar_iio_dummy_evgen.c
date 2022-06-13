@@ -18,7 +18,7 @@
 #include <linux/module.h>
 #include <linux/sysfs.h>
 
-#include "zainar_iio_dummy_evgen.h"
+#include "iio_dummy_evgen.h"
 #include <linux/iio/iio.h>
 #include <linux/iio/sysfs.h>
 #include <linux/irq_sim.h>
@@ -67,12 +67,12 @@ static int iio_dummy_evgen_create(void)
 }
 
 /**
- * zn_iio_dummy_evgen_get_irq() - get an evgen provided irq for a device
+ * iio_dummy_evgen_get_irq() - get an evgen provided irq for a device
  *
  * This function will give a free allocated irq to a client device.
  * That irq can then be caused to 'fire' by using the associated sysfs file.
  */
-int zn_iio_dummy_evgen_get_irq(void)
+int iio_dummy_evgen_get_irq(void)
 {
 	int i, ret = 0;
 
@@ -93,15 +93,15 @@ int zn_iio_dummy_evgen_get_irq(void)
 
 	return ret;
 }
-EXPORT_SYMBOL_GPL(zn_iio_dummy_evgen_get_irq);
+EXPORT_SYMBOL_GPL(iio_dummy_evgen_get_irq);
 
 /**
- * zn_iio_dummy_evgen_release_irq() - give the irq back.
+ * iio_dummy_evgen_release_irq() - give the irq back.
  * @irq: irq being returned to the pool
  *
  * Used by client driver instances to give the irqs back when they disconnect
  */
-void zn_iio_dummy_evgen_release_irq(int irq)
+void iio_dummy_evgen_release_irq(int irq)
 {
 	struct irq_data *irqd = irq_get_irq_data(irq);
 
@@ -110,16 +110,16 @@ void zn_iio_dummy_evgen_release_irq(int irq)
 	irq_dispose_mapping(irq);
 	mutex_unlock(&iio_evgen->lock);
 }
-EXPORT_SYMBOL_GPL(zn_iio_dummy_evgen_release_irq);
+EXPORT_SYMBOL_GPL(iio_dummy_evgen_release_irq);
 
-struct iio_dummy_regs *zn_iio_dummy_evgen_get_regs(int irq)
+struct iio_dummy_regs *iio_dummy_evgen_get_regs(int irq)
 {
 	struct irq_data *irqd = irq_get_irq_data(irq);
 
 	return &iio_evgen->regs[irqd_to_hwirq(irqd)];
 
 }
-EXPORT_SYMBOL_GPL(zn_iio_dummy_evgen_get_regs);
+EXPORT_SYMBOL_GPL(iio_dummy_evgen_get_regs);
 
 static void iio_dummy_evgen_free(void)
 {
