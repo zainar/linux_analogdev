@@ -184,4 +184,4 @@ obj-$(CONFIG_XILINX_XADC) += xilinx-xadc.o
 obj-$(CONFIG_XILINX_AMS) += xilinx-ams.o
 obj-$(CONFIG_SD_ADC_MODULATOR) += sd_adc_modulator.o
 obj-$(CONFIG_VERSAL_SYSMON) += versal-sysmon.o
-obj-$(CONFIG_ZAINAR_DMATEST) += zainar_axidmatest.o
+obj-$(CONFIG_ZAINAR_DMATEST) += zainar_axidmatest.o zainar_iio_simple_dummy_events.o zainar_iio_dummy_evgen.o
