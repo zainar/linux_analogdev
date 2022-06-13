@@ -39,15 +39,12 @@ struct iio_dummy_state {
 	int steps_enabled;
 	int steps;
 	int height;
-#ifdef CONFIG_IIO_SIMPLE_DUMMY_EVENTS
 	int event_irq;
 	int event_val;
 	bool event_en;
 	s64 event_timestamp;
-#endif /* CONFIG_IIO_SIMPLE_DUMMY_EVENTS */
 };
 
-#ifdef CONFIG_IIO_SIMPLE_DUMMY_EVENTS
 
 struct iio_dev;
 
@@ -79,19 +76,6 @@ int iio_simple_dummy_write_event_value(struct iio_dev *indio_dev,
 int iio_simple_dummy_events_register(struct iio_dev *indio_dev);
 void iio_simple_dummy_events_unregister(struct iio_dev *indio_dev);
 
-#else /* Stubs for when events are disabled at compile time */
-
-static inline int
-iio_simple_dummy_events_register(struct iio_dev *indio_dev)
-{
-	return 0;
-}
-
-static inline void
-iio_simple_dummy_events_unregister(struct iio_dev *indio_dev)
-{}
-
-#endif /* CONFIG_IIO_SIMPLE_DUMMY_EVENTS*/
 
 /**
  * enum iio_simple_dummy_scan_elements - scan index enum
