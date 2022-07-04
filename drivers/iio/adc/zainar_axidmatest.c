@@ -1046,7 +1046,6 @@ static int xilinx_axidmatest_probe(struct platform_device *pdev)
 	}
 
    pr_info(" -- %s -- Finished adding first loopback channels \n", __FUNCTION__);
-
     chan2 = dma_request_chan(&pdev->dev, "axidma2");
     if (IS_ERR(chan2)) {
         pr_err("   Could not requst axidma2\n");
@@ -1072,7 +1071,6 @@ static int xilinx_axidmatest_probe(struct platform_device *pdev)
     }
 
     pr_info(" -- %s -- Finished adding second loopback channels \n", __FUNCTION__);
-
 
 
 	return 0;
