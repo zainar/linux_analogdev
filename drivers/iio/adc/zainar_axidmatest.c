@@ -1016,13 +1016,14 @@ error_kzalloc:
 
 static int xilinx_axidmatest_probe(struct platform_device *pdev)
 {
-	struct dma_chan *chan, *rx_chan;
+	struct dma_chan *chan, *rx_chan, *chan2, *rx_chan2;
 	int err;
 
-	pr_info(" ===== ZAINAR AXI DMA TEST PROBE =====\n");
+	pr_info(" ===== ZAINAR AXI DUAL FPGA DMA TEST PROBE =====\n");
 	pr_info(" -- %s --\n", __FUNCTION__);
 	chan = dma_request_chan(&pdev->dev, "axidma0");
 	if (IS_ERR(chan)) {
+        pr_err("   Could not requst axidma0\n");
 		err = PTR_ERR(chan);
 		if (err != -EPROBE_DEFER)
 			pr_err("xilinx_dmatest: No Tx channel\n");
@@ -1031,6 +1032,7 @@ static int xilinx_axidmatest_probe(struct platform_device *pdev)
 
 	rx_chan = dma_request_chan(&pdev->dev, "axidma1");
 	if (IS_ERR(rx_chan)) {
+        pr_err("   Could not requst axidma1\n");
 		err = PTR_ERR(rx_chan);
 		if (err != -EPROBE_DEFER)
 			pr_err("xilinx_dmatest: No Rx channel\n");
@@ -1043,12 +1045,44 @@ static int xilinx_axidmatest_probe(struct platform_device *pdev)
 		goto free_rx;
 	}
 
+   pr_info(" -- %s -- Finished adding first loopback channels \n", __FUNCTION__);
+
+    chan2 = dma_request_chan(&pdev->dev, "axidma2");
+    if (IS_ERR(chan2)) {
+        pr_err("   Could not requst axidma2\n");
+        err = PTR_ERR(chan2);
+        if (err != -EPROBE_DEFER)
+            pr_err("xilinx_dmatest: No Tx channel\n");
+        return err;
+    }
+
+    rx_chan2 = dma_request_chan(&pdev->dev, "axidma3");
+    if (IS_ERR(rx_chan2)) {
+        pr_err("   Could not requst axidma3\n");
+        err = PTR_ERR(rx_chan2);
+        if (err != -EPROBE_DEFER)
+            pr_err("xilinx_dmatest: No Rx channel\n");
+        goto free_tx;
+    }
+
+    err = dmatest_add_slave_channels(chan2, rx_chan2);
+    if (err) {
+        pr_err("xilinx_dmatest: Unable to add channels\n");
+        goto free_rx;
+    }
+
+    pr_info(" -- %s -- Finished adding second loopback channels \n", __FUNCTION__);
+
+
+
 	return 0;
 
 free_rx:
 	dma_release_channel(rx_chan);
+    dma_release_channel(rx_chan2);
 free_tx:
 	dma_release_channel(chan);
+    dma_release_channel(chan2);
 
 	return err;
 }
