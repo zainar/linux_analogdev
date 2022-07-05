@@ -37,11 +37,9 @@
 #include "zainar_iio_simple_dummy.h"
 
 
-static unsigned int test_buf_size = 16384;
-module_param(test_buf_size, uint, 0444);
-MODULE_PARM_DESC(test_buf_size, "Size of the memcpy test buffer");
+static unsigned int test_buf_size = 4194304; //4MB
 
-static unsigned int iterations = 5;
+static unsigned int iterations = 20;
 module_param(iterations, uint, 0444);
 MODULE_PARM_DESC(iterations,
 		 "Iterations before stopping test (default: infinite)");
@@ -296,7 +294,7 @@ static int dmatest_slave_func(void *data)
 	}
 	thread->dsts[i] = NULL;
 
-	set_user_nice(current, 10);
+	set_user_nice(current, -5);
 
 	flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
 
