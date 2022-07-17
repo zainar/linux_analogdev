@@ -1,0 +1,9 @@
+config ZAINAR_AXIDMA
+        tristate "Zainar AXI DMA driver or something"
+        depends on (AXI_DMAC && XILINX_DMA)
+        select DMA_ENGINE
+        help
+          Enable support for out fancy ZAINAR DMA driver... Add more words
+          here..
+
+
